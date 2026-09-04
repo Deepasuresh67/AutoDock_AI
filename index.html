@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto-Dock It - GitHub Repo Analyzer & Containerizer</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/eslint4b@8.45.0/dist/eslint4b.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-brand">
+        <!-- SVG Brand Logo -->
+        <svg class="logo-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="48" height="48" rx="12" fill="white" fill-opacity="0.2"/>
+          <path d="M14 26C14 21.5817 17.5817 18 22 18H26C30.4183 18 34 21.5817 34 26V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V26Z" fill="white"/>
+          <rect x="18" y="22" width="4" height="4" rx="1" fill="#6e48aa"/>
+          <rect x="26" y="22" width="4" height="4" rx="1" fill="#6e48aa"/>
+          <rect x="22" y="14" width="4" height="4" rx="1" fill="white" fill-opacity="0.9"/>
+          <circle cx="36" cy="24" r="2" fill="#ff6a88"/>
+        </svg>
+        <h1>Auto-Dock It</h1>
+      </div>
+      <p>Analyze any GitHub repository, inspect code, generate production Dockerfiles, and automate container deployments.</p>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <div class="nav-container">
+      <ul class="nav-tabs">
+        <li><a href="#" class="nav-link active" data-page="analyzer">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          Analyzer
+        </a></li>
+        <li><a href="#" class="nav-link" data-page="code-viewer">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          Code Viewer
+        </a></li>
+        <li><a href="#" class="nav-link" data-page="dockerfile">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          Dockerfile Editor
+        </a></li>
+        <li><a href="#" class="nav-link" data-page="deployment">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Deployment
+        </a></li>
+      </ul>
+    </div>
+
+    <!-- Repository Input Bar -->
+    <div class="input-card">
+      <div class="input-group">
+        <input type="text" id="repo-url" placeholder="Enter GitHub repo e.g. https://github.com/expressjs/express or owner/repo" aria-label="GitHub repository URL">
+        <button id="analyze-btn" type="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Analyze Repo
+        </button>
+      </div>
+      <div class="input-extras">
+        <div class="sample-chips">
+          <span class="sample-label">Quick test:</span>
+          <span class="chip" data-repo="expressjs/express">expressjs/express</span>
+          <span class="chip" data-repo="facebook/react">facebook/react</span>
+          <span class="chip" data-repo="pallets/flask">pallets/flask</span>
+          <span class="chip" data-repo="golang/go">golang/go</span>
+        </div>
+        <div class="ai-toggle">
+          <label>
+            <input type="checkbox" id="ai-analysis" checked>
+            <span>Enable Smart AI Architecture Analysis</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading" class="loading">
+      <div class="loading-spinner"></div>
+      <p id="loading-text">Fetching repository architecture, languages, and files...</p>
+    </div>
+
+    <!-- PAGE 1: Analyzer -->
+    <div id="analyzer-page" class="page-content active">
+      <div id="results" class="results" style="display: none;">
+        
+        <!-- Owner & Repo Info Card -->
+        <div class="card owner-card">
+          <h2>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Repository Overview
+          </h2>
+          <div class="owner-card-content">
+            <img id="owner-avatar" class="owner-avatar" src="" alt="Owner Avatar">
+            <div class="owner-details">
+              <div class="repo-title-wrapper">
+                <a id="owner-link" class="owner-login-link" href="#" target="_blank">owner</a>
+                <span style="color: #cbd5e1; font-size: 1.4rem;">/</span>
+                <a id="repo-link" class="repo-name-link" href="#" target="_blank">repository</a>
+                <span id="owner-type-badge" class="badge" style="margin-left: 8px;">User</span>
+              </div>
+              <p id="repo-desc" class="repo-description">Repository description will appear here.</p>
+              <div class="repo-badges">
+                <span id="badge-stars" class="badge">⭐ 0 Stars</span>
+                <span id="badge-forks" class="badge">🍴 0 Forks</span>
+                <span id="badge-issues" class="badge">⚠️ 0 Open Issues</span>
+                <span id="badge-license" class="badge">📄 MIT</span>
+                <span id="badge-branch" class="badge">🌿 main</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Languages Breakdown Card -->
+        <div class="card languages-card">
+          <h2>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+            Language Breakdown
+          </h2>
+          <div class="language-section-grid">
+            <div class="chart-container">
+              <canvas id="language-chart"></canvas>
+            </div>
+            <div>
+              <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 12px;">Detected codebase languages and byte distribution:</p>
+              <div id="language-list" class="language-list"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Insights & Architecture Analysis Card -->
+        <div id="ai-insights-section" class="card ai-insights">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+            <h2 style="margin: 0;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              Smart AI Insights & Architecture
+            </h2>
+            <span id="ai-provider-badge" class="badge" style="background: linear-gradient(135deg, #6e48aa 0%, #ff6a88 100%); color: white; border: none;">✨ Smart Engine</span>
+          </div>
+          
+          <div class="insight-grid">
+            <div class="insight-box">
+              <h3>Detected Tech Stack</h3>
+              <p id="insight-stack">Analyzing...</p>
+            </div>
+            <div class="insight-box">
+              <h3>Project Complexity</h3>
+              <p id="insight-complexity">Analyzing...</p>
+            </div>
+            <div class="insight-box">
+              <h3>DevOps & Container Suggestions</h3>
+              <p id="insight-improvements">Analyzing...</p>
+            </div>
+            <div class="insight-box">
+              <h3>Container Security Advice</h3>
+              <p id="insight-security">Pin base images, use non-root execution, and scan layer dependencies.</p>
+            </div>
+          </div>
+
+          <!-- Generated Dockerfile Quick Preview -->
+          <div style="margin-top: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+              <h3 style="font-size: 1.1rem; color: var(--primary);">Recommended Dockerfile</h3>
+              <div style="display: flex; gap: 8px;">
+                <button id="quick-copy-dockerfile-btn" class="btn btn-secondary btn-sm" type="button">Copy Code</button>
+                <button id="quick-download-dockerfile-btn" class="btn btn-primary btn-sm" type="button">Download</button>
+                <button id="quick-open-editor-btn" class="btn btn-outline btn-sm" type="button">Open in Editor ➔</button>
+              </div>
+            </div>
+            <div class="code-preview-block">
+              <pre><code id="dockerfile-preview-code">FROM node:18-alpine...</code></pre>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Interactive Ask AI Assistant Card -->
+        <div class="card" style="background: #faf8ff; border: 1px solid #ede4ff;">
+          <h2>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Ask AI Architect About This Repository
+          </h2>
+          <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 14px;">
+            Have questions on how to deploy, optimize, or scale this repository? Ask the AI architect:
+          </p>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <input type="text" id="ai-chat-input" placeholder="e.g. How do I deploy this repository to Kubernetes with Helm?" style="flex: 1; min-width: 260px; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; outline: none;">
+            <button id="ai-chat-submit-btn" class="btn btn-primary" type="button">Ask AI</button>
+          </div>
+          <div id="ai-chat-response" style="margin-top: 14px; display: none; background: white; border-radius: 8px; border: 1px solid #e2e8f0; padding: 16px; font-size: 0.95rem; line-height: 1.6;"></div>
+        </div>
+
+      </div>
+
+      <!-- Welcome Placeholder if no repo analyzed yet -->
+      <div id="welcome-placeholder" class="card" style="text-align: center; padding: 48px 24px;">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#6e48aa" stroke-width="1.5" style="margin-bottom: 16px;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <h3 style="font-size: 1.3rem; margin-bottom: 8px; color: var(--primary);">Ready to analyze your repository</h3>
+        <p style="color: var(--text-muted); max-width: 500px; margin: 0 auto 20px auto;">
+          Enter a public GitHub repository link above or choose one of the quick test chips to generate insights and Docker configs instantly.
+        </p>
+      </div>
+
+    </div>
+
+    <!-- PAGE 2: Code Viewer & Bug Analysis -->
+    <div id="code-viewer-page" class="page-content">
+      <div class="card">
+        <h2>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          Repository Code Tools
+        </h2>
+        <p style="color: var(--text-muted); margin-bottom: 18px;">
+          Inspect repository source files, render clean code image cards for documentation, or run live in-browser ESLint bug detection.
+        </p>
+        <div class="code-viewer-actions">
+          <button id="show-code-images-btn" class="btn btn-primary" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            Show Code as Images
+          </button>
+          <button id="lint-js-btn" class="btn btn-secondary" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Analyze JS/TS Code for Bugs
+          </button>
+        </div>
+
+        <!-- Code Images Output -->
+        <div id="code-images-status" style="font-weight: 600; color: var(--primary); margin: 12px 0; display: none;"></div>
+        <div id="code-images" class="code-images-grid"></div>
+
+        <!-- Linter Output -->
+        <div id="lint-results-card" style="display: none;">
+          <h3 style="color: var(--primary); margin-bottom: 12px;">ESLint Inspection Report</h3>
+          <div id="lint-results"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 3: Dockerfile Editor -->
+    <div id="dockerfile-page" class="page-content">
+      <div class="card">
+        <h2>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          Interactive Dockerfile Editor
+        </h2>
+        <p style="color: var(--text-muted); margin-bottom: 16px;">
+          Customize your Dockerfile or switch between optimized presets for different language runtimes.
+        </p>
+
+        <div class="preset-bar">
+          <label for="dockerfile-preset-select" style="font-weight: 600; font-size: 0.9rem;">Template Preset:</label>
+          <select id="dockerfile-preset-select" class="preset-select">
+            <option value="current">Current Recommended (Auto-detected)</option>
+            <option value="node">Node.js (Alpine Production)</option>
+            <option value="next">Next.js (Multi-stage Build)</option>
+            <option value="react">React / Vue SPA (Nginx)</option>
+            <option value="python-flask">Python Flask</option>
+            <option value="python-django">Python Django</option>
+            <option value="python-fastapi">Python FastAPI</option>
+            <option value="java-maven">Java (Maven Multi-stage)</option>
+            <option value="go">Go (Alpine Static Binary)</option>
+            <option value="rust">Rust (Alpine Release)</option>
+            <option value="php">PHP Apache</option>
+          </select>
+        </div>
+
+        <textarea id="dockerfile-editor-text" class="dockerfile-editor-area" spellcheck="false"></textarea>
+
+        <div class="dockerfile-button-bar">
+          <button id="download-dockerfile-page-btn" class="btn btn-primary" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download Dockerfile
+          </button>
+          <button id="copy-dockerfile-page-btn" class="btn btn-secondary" type="button">Copy to Clipboard</button>
+          <button id="reset-dockerfile-page-btn" class="btn btn-secondary" type="button">Reset to Recommended</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 4: Deployment -->
+    <div id="deployment-page" class="page-content">
+      
+      <!-- Local Deployment Simulator -->
+      <div class="card">
+        <h2>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          Local Container Deployment
+        </h2>
+        <p style="color: var(--text-muted); margin-bottom: 16px;">
+          Build and run your containerized app locally using Docker engine simulation.
+        </p>
+        <button id="deploy-local-btn" class="btn btn-primary" type="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Launch Local Deployment Simulation
+        </button>
+
+        <div id="deploy-steps-container" class="deploy-steps-container" style="display: none;">
+          <div id="deploy-step-1" class="deploy-step">1. Generating container build context...</div>
+          <div id="deploy-step-2" class="deploy-step">2. Pulling base container images...</div>
+          <div id="deploy-step-3" class="deploy-step">3. Building layers & installing dependencies...</div>
+          <div id="deploy-step-4" class="deploy-step">4. Exposing port 3000 & configuring environment...</div>
+          <div id="deploy-step-5" class="deploy-step">5. Container started successfully!</div>
+          <div id="deploy-success-details" style="margin-top: 16px; display: none;">
+            <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; border-radius: 8px; padding: 14px; color: #34d399;">
+              <strong>Status: Container is Live & Healthy</strong><br>
+              Local URL: <a href="http://localhost:3000" target="_blank" style="color: #60a5fa; text-decoration: underline;">http://localhost:3000</a><br>
+              Container Name: <code id="mock-container-name" style="background: #000; padding: 2px 6px; border-radius: 4px; color: #fff;">dock-app-live</code>
+            </div>
+            <div style="margin-top: 12px; font-size: 0.85rem; color: #94a3b8;">
+              Terminal Command: <code>docker run -p 3000:3000 my-app:latest</code>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cloud Deployment Options -->
+      <div class="card">
+        <h2>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+          Cloud Deployment Providers
+        </h2>
+        <p style="color: var(--text-muted);">
+          Deploy your containerized service seamlessly to any major cloud provider:
+        </p>
+        <div class="cloud-grid">
+          <div class="cloud-card" data-cloud="aws">
+            <div class="cloud-icon">☁️</div>
+            <h3>Amazon AWS</h3>
+            <p>AWS Elastic Container Service (ECS) & AWS App Runner</p>
+          </div>
+          <div class="cloud-card" data-cloud="gcp">
+            <div class="cloud-icon">⚡</div>
+            <h3>Google Cloud Run</h3>
+            <p>Serverless auto-scaling container execution</p>
+          </div>
+          <div class="cloud-card" data-cloud="azure">
+            <div class="cloud-icon">🔷</div>
+            <h3>Microsoft Azure</h3>
+            <p>Azure Container Apps & AKS Orchestration</p>
+          </div>
+          <div class="cloud-card" data-cloud="digitalocean">
+            <div class="cloud-icon">🌊</div>
+            <h3>DigitalOcean</h3>
+            <p>App Platform 1-click Git container deployments</p>
+          </div>
+        </div>
+
+        <div id="cloud-info-box" style="margin-top: 20px; display: none; background: #faf8ff; border: 1px solid #ede4ff; border-radius: 8px; padding: 18px;">
+          <h3 id="cloud-info-title" style="color: var(--primary); margin-bottom: 8px;">Cloud Deploy Guide</h3>
+          <p id="cloud-info-desc" style="font-size: 0.95rem; margin-bottom: 12px;"></p>
+          <pre style="background: #1e1e2e; color: #a6e3a1; padding: 12px; border-radius: 6px; overflow-x: auto; font-family: monospace; font-size: 0.85rem;"><code id="cloud-info-cmd"></code></pre>
+        </div>
+      </div>
+
+    </div>
+
+    <footer>
+      &copy; 2026 Auto-Dock It &mdash; Powered by DeepMind & Hackfinity
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
