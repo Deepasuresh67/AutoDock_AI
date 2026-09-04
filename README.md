@@ -85,7 +85,7 @@ Clone the repository and install dependencies:
 
 ```bash
 git clone https://github.com/your-username/AutoDock_AI.git
-cd hackfinity
+cd AutoDock_AI
 npm install
 ```
 
